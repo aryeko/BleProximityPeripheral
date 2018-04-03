@@ -6,7 +6,6 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.support.design.widget.Snackbar
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v7.app.ActionBarDrawerToggle
@@ -18,20 +17,14 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
-    private lateinit var mBluetoothAdapter : BluetoothAdapter
 
     private val REQUEST_ENABLE_BT: Int = 1
-    private val TAG: String = "ProximityPeripheral"
+    private var mBlePeripheral : BlePeripheral? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
-        }
 
         val toggle = ActionBarDrawerToggle(
                 this, drawer_layout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
@@ -41,12 +34,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         nav_view.setNavigationItemSelectedListener(this)
 
         val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        mBluetoothAdapter = bluetoothManager.adapter
+        val bluetoothAdapter = bluetoothManager.adapter
 
-        if(!mBluetoothAdapter.isEnabled){
+        if(!bluetoothAdapter.isEnabled){
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
         }
+
+        mBlePeripheral = BlePeripheral(this, bluetoothAdapter, bluetoothManager)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -54,13 +49,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         if(requestCode == REQUEST_ENABLE_BT && resultCode != Activity.RESULT_OK)
         {
-            Log.e(TAG, "Bluetooth is not enabled")
+            Log.e(this::class.simpleName, "Bluetooth is not enabled")
             //TODO: Wait for bluetooth to be enabled
         }
     }
 
     override fun onStart() {
         super.onStart()
+
+
+    }
+
+    override fun onStop() {
+        super.onStop()
+        //Reduced power on background
     }
 
     override fun onBackPressed() {
@@ -90,11 +92,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.
         when (item.itemId) {
-            R.id.nav_camera -> {
-                // Handle the camera action
+            R.id.nav_startAdv -> {
+                mBlePeripheral?.startAdvertising()
             }
-            R.id.nav_gallery -> {
-
+            R.id.nav_stopAdv -> {
+                mBlePeripheral?.stopAdvertising()
             }
             R.id.nav_slideshow -> {
 
@@ -113,4 +115,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
     }
+
+
+
 }
