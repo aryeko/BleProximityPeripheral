@@ -10,13 +10,13 @@ import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
+import org.jetbrains.anko.*
 
-class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, AnkoLogger {
 
     private val REQUEST_ENABLE_BT: Int = 1
     private var mBlePeripheral : BlePeripheral? = null
@@ -42,6 +42,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
 
         mBlePeripheral = BlePeripheral(this, bluetoothAdapter, bluetoothManager)
+
+        info { "ProximityPeripheral has created" }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -49,7 +51,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         if(requestCode == REQUEST_ENABLE_BT && resultCode != Activity.RESULT_OK)
         {
-            Log.e(this::class.simpleName, "Bluetooth is not enabled")
+            error { "Bluetooth is not enabled" }
             //TODO: Wait for bluetooth to be enabled
         }
     }

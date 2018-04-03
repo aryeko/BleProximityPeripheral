@@ -36,6 +36,6 @@ class ProximityGattService : IGattService {
     }
 
     override fun toString(): String {
-        return "${this::class.simpleName} - UUID [$serviceUUID]"
+        return "ProximityGattService - UUID [$serviceUUID]"
     }
 }
