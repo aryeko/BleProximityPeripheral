@@ -1,5 +1,7 @@
 package com.kogan.arye.proximityperipheral.GattServices
 
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.le.AdvertiseData
 import android.bluetooth.le.AdvertiseSettings
@@ -10,8 +12,35 @@ import java.util.*
  * Created by aryekoga on 4/3/2018.
  */
 class ProximityGattService : IGattService {
+
+    private val mProximityCharacteristicUuid: UUID = UUID.fromString("08590F7E-DB05-467E-8757-72F6FAEB13D4")
+    private val CHARACTERISTIC_USER_DESCRIPTION_UUID = UUID.fromString("00002901-0000-1000-8000-00805f9b34fb")
+    private val CLIENT_CHARACTERISTIC_CONFIGURATION_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    private val mProximityCharacteristic : BluetoothGattCharacteristic
+    private val mBluetoothGattService : BluetoothGattService
+
+    init {
+        mProximityCharacteristic = BluetoothGattCharacteristic(mProximityCharacteristicUuid,
+                BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+                BluetoothGattCharacteristic.PERMISSION_READ)
+
+        val userDescriptor = BluetoothGattDescriptor(CHARACTERISTIC_USER_DESCRIPTION_UUID,
+                BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE)
+        userDescriptor.value = "Proximity".toByteArray(Charsets.UTF_8)
+        mProximityCharacteristic.addDescriptor(userDescriptor)
+
+        val confDescriptor = BluetoothGattDescriptor(CLIENT_CHARACTERISTIC_CONFIGURATION_UUID,
+                BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE)
+        confDescriptor.value = "Conf".toByteArray(Charsets.UTF_8)
+        mProximityCharacteristic.addDescriptor(confDescriptor)
+
+        mBluetoothGattService = BluetoothGattService(serviceUUID.uuid,
+                BluetoothGattService.SERVICE_TYPE_PRIMARY)
+        mBluetoothGattService.addCharacteristic(mProximityCharacteristic)
+    }
+
     override val serviceUUID: ParcelUuid
-        get() = ParcelUuid(UUID(0, 2711))
+        get() = ParcelUuid(UUID(0, 0x2711))
 
     override val advertiseSettings: AdvertiseSettings
         get() = AdvertiseSettings.Builder()
@@ -32,10 +61,14 @@ class ProximityGattService : IGattService {
                 .build()
 
     override fun getBluetoothGattService(): BluetoothGattService {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return mBluetoothGattService
     }
 
     override fun toString(): String {
         return "ProximityGattService - UUID [$serviceUUID]"
+    }
+
+    fun setProximityValue(value : String){
+        mProximityCharacteristic.setValue(value)
     }
 }

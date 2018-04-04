@@ -7,6 +7,7 @@ import android.content.Context
 import com.kogan.arye.proximityperipheral.GattServices.IGattService
 import org.jetbrains.anko.AnkoLogger
 import org.jetbrains.anko.info
+import java.nio.charset.Charset
 
 /**
  * Created by aryekoga on 4/3/2018.
@@ -31,10 +32,24 @@ class BlePeripheral(val context: Context,
 
     fun addGattService(gattService: IGattService) {
         mGattServicesList.add(gattService)
+        //TODO: check if GATT service is already there before adding it
+        mGattServer.addService(gattService.getBluetoothGattService())
     }
 
-    fun addGattServices(gattServices : MutableList<IGattService>){
-        mGattServicesList.addAll(gattServices)
+    fun notifyCharacteristicChanged(gattService: IGattService) {
+        val characteristic = gattService.getBluetoothGattService().getCharacteristic(gattService.serviceUUID.uuid) //TODO: Wrong UUID, fix it!
+        val indicate = true //TODO: set indicate\notify correctly
+        for (device in mBluetoothManager.getConnectedDevices(BluetoothGattServer.GATT)) {
+            // true for indication (acknowledge) and false for notification (unacknowledge).
+            info {
+                "${if (indicate) {
+                    "Indicating"
+                } else {
+                    "Notifying"
+                }} device [$device] for characteristic changed (characteristic - $characteristic)"
+            }
+            mGattServer.notifyCharacteristicChanged(device, characteristic, indicate)
+        }
     }
 
     fun startAdvertising(){
@@ -73,6 +88,9 @@ class BlePeripheral(val context: Context,
         override fun onCharacteristicReadRequest(device: BluetoothDevice?, requestId: Int, offset: Int, characteristic: BluetoothGattCharacteristic?) {
             super.onCharacteristicReadRequest(device, requestId, offset, characteristic)
             info { "onCharacteristicReadRequest - device=$device, requestId=$requestId, offset=$offset, characteristic=$characteristic" }
+            info { "characteristic value: ${characteristic?.value?.toString(Charset.defaultCharset())}" }
+
+            mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, characteristic?.value)
         }
 
         override fun onCharacteristicWriteRequest(device: BluetoothDevice?, requestId: Int, characteristic: BluetoothGattCharacteristic?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
@@ -87,7 +105,10 @@ class BlePeripheral(val context: Context,
 
         override fun onDescriptorReadRequest(device: BluetoothDevice?, requestId: Int, offset: Int, descriptor: BluetoothGattDescriptor?) {
             super.onDescriptorReadRequest(device, requestId, offset, descriptor)
-            info { "onDescriptorReadRequest" }
+            info { "onDescriptorReadRequest - descriptor=$descriptor" }
+            info { "descriptor value: ${descriptor?.value}" }
+
+            mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, descriptor?.value)
         }
 
         override fun onDescriptorWriteRequest(device: BluetoothDevice?, requestId: Int, descriptor: BluetoothGattDescriptor?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {

@@ -13,9 +13,9 @@
             android:icon="@drawable/ic_menu_gallery"
             android:title="Stop advertising" />
         <item
-            android:id="@+id/nav_slideshow"
+            android:id="@+id/nav_change_value"
             android:icon="@drawable/ic_menu_slideshow"
-            android:title="Slideshow" />
+            android:title="Change value" />
         <item
             android:id="@+id/nav_manage"
             android:icon="@drawable/ic_menu_manage"

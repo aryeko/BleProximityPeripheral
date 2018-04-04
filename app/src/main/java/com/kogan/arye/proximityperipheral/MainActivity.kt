@@ -12,6 +12,7 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import com.kogan.arye.proximityperipheral.GattServices.ProximityGattService
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import org.jetbrains.anko.*
@@ -19,7 +20,12 @@ import org.jetbrains.anko.*
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, AnkoLogger {
 
     private val REQUEST_ENABLE_BT: Int = 1
-    private var mBlePeripheral : BlePeripheral? = null
+    private lateinit var mBlePeripheral : BlePeripheral
+    private lateinit var mBluetoothManager : BluetoothManager
+    private lateinit var mBluetoothAdapter : BluetoothAdapter
+    private val mProximityGattService : ProximityGattService = ProximityGattService()
+
+    var dummy = "A"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,15 +39,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         nav_view.setNavigationItemSelectedListener(this)
 
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val bluetoothAdapter = bluetoothManager.adapter
+        mBluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        mBluetoothAdapter = mBluetoothManager.adapter
 
-        if(!bluetoothAdapter.isEnabled){
+        if(!mBluetoothAdapter.isEnabled){
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+            //TODO: Fix app crush
         }
 
-        mBlePeripheral = BlePeripheral(this, bluetoothAdapter, bluetoothManager)
+        mBlePeripheral = BlePeripheral(this, mBluetoothAdapter, mBluetoothManager)
+        mBlePeripheral.addGattService(mProximityGattService)
 
         info { "ProximityPeripheral has created" }
     }
@@ -58,7 +66,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onStart() {
         super.onStart()
-
 
     }
 
@@ -95,16 +102,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Handle navigation view item clicks here.
         when (item.itemId) {
             R.id.nav_startAdv -> {
-                mBlePeripheral?.startAdvertising()
+                mBlePeripheral.startAdvertising()
             }
             R.id.nav_stopAdv -> {
-                mBlePeripheral?.stopAdvertising()
+                mBlePeripheral.stopAdvertising()
             }
-            R.id.nav_slideshow -> {
-
+            R.id.nav_change_value -> {
+                info{"Set proximity state to: $dummy"}
+                mProximityGattService.setProximityValue(dummy)
+                dummy = dummy.repeat(2)
             }
             R.id.nav_manage -> {
-
+                mBlePeripheral.notifyCharacteristicChanged(mProximityGattService)
             }
             R.id.nav_share -> {
 
