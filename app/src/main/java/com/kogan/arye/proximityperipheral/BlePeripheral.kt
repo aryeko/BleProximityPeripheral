@@ -12,7 +12,7 @@ import java.nio.charset.Charset
 /**
  * Created by aryekoga on 4/3/2018.
  */
-class BlePeripheral(val context: Context,
+class BlePeripheral(val mAppContext: Context,
                     val mBluetoothAdapter: BluetoothAdapter,
                     val mBluetoothManager: BluetoothManager) : AnkoLogger{
 
@@ -24,7 +24,7 @@ class BlePeripheral(val context: Context,
     init {
         mServerCallback = PeripheralGattServerCallback()
         mGattServer = mBluetoothManager.openGattServer(
-                context,
+                mAppContext,
                 mServerCallback
         )
         mCurrentlyAdvertising = false
@@ -90,7 +90,25 @@ class BlePeripheral(val context: Context,
             info { "onCharacteristicReadRequest - device=$device, requestId=$requestId, offset=$offset, characteristic=$characteristic" }
             info { "characteristic value: ${characteristic?.value?.toString(Charset.defaultCharset())}" }
 
-            mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, characteristic?.value)
+            /**
+             * Reading remote device's RSSI (signal strength) value and responding with it
+             *
+             * TODO: Move to the ProximityGattService
+             */
+            device!!.connectGatt(mAppContext, false, object : BluetoothGattCallback() {
+                override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+                    super.onConnectionStateChange(gatt, status, newState)
+                    info { "Connection status changed" }
+                    gatt!!.readRemoteRssi()
+                    info { "Read remote RSSI request sent." }
+                }
+                override fun onReadRemoteRssi(gatt: BluetoothGatt?, rssi: Int, status: Int) {
+                    super.onReadRemoteRssi(gatt, rssi, status)
+                    info { "Remote RSSI is: $rssi, status is: $status" }
+                    info { "Responding with GATT success and RSSI value: $rssi" }
+                    mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, byteArrayOf(rssi.toByte()))
+                }
+            })
         }
 
         override fun onCharacteristicWriteRequest(device: BluetoothDevice?, requestId: Int, characteristic: BluetoothGattCharacteristic?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
